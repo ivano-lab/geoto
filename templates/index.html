@@ -3,19 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <title>Mapa Experimental - Trilhando Rios</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.5/dist/leaflet.css"
           integrity="sha256-sA+SkHqlkR9F0tXz6dE4ZcSb3i0u0Hw3FJ4yGmM0Mnk=" crossorigin=""/>
     <style>
+        /* Estilos Básicos (Para Telas Grandes e Pequenas) */
         body {
             font-family: 'Roboto', sans-serif;
             background: #f4f4f9;
             color: #333;
             text-align: center;
             padding: 2rem;
+            /* Garante que o padding não cause overflow horizontal */
+            box-sizing: border-box;
+            min-width: 320px; /* Evita que telas minúsculas fiquem muito apertadas */
         }
 
         h1 {
             color: #1345B5;
+            font-size: 2rem; /* Tamanho padrão */
         }
 
         select, button {
@@ -24,6 +31,16 @@
             border-radius: 8px;
             border: 2px solid #1345B5;
             font-size: 1rem;
+            width: auto; /* Deixa o botão se ajustar ao conteúdo */
+        }
+
+        /* Torna o select e o botão 100% da largura em telas pequenas para melhor toque */
+        .controls-container {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap; /* Permite que os itens quebrem para a linha de baixo */
         }
 
         button {
@@ -54,6 +71,9 @@
             padding: 1rem;
             border-radius: 6px;
             overflow-x: auto;
+            /* Adicionado para telas pequenas */
+            white-space: pre-wrap;
+            word-wrap: break-word;
         }
 
         #map {
@@ -64,6 +84,45 @@
             margin-right: auto;
             border-radius: 10px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            /* Garante que o mapa se ajuste ao tamanho do contêiner */
+            width: 100%;
+        }
+
+        /* -------------------------------------- */
+        /* MEDIA QUERIES (Regras de Responsividade) */
+        /* -------------------------------------- */
+
+        /* Para telas menores que 600px (smartphones) */
+        @media (max-width: 600px) {
+            body {
+                padding: 1rem; /* Reduz o padding em telas pequenas */
+            }
+
+            h1 {
+                font-size: 1.5rem; /* Reduz o tamanho do título */
+            }
+
+            p {
+                font-size: 0.9rem;
+            }
+
+            /* Faz o select e o botão ocuparem a largura total da tela */
+            .controls-container {
+                flex-direction: column;
+            }
+
+            select, button {
+                width: 100%; /* Ocupa 100% do espaço disponível para facilitar o clique */
+                margin: 0.5rem 0;
+            }
+
+            #map {
+                height: 350px; /* Reduz a altura do mapa para caber melhor na tela */
+            }
+
+            #resultado {
+                padding: 0.7rem;
+            }
         }
     </style>
 </head>
@@ -71,11 +130,12 @@
     <h1>Trilhando Rios - Módulo Experimental</h1>
     <p>Selecione uma cidade para consultar suas coordenadas geográficas.</p>
 
-    <select id="cidadeSelect">
-        <option value="">-- Escolha uma cidade --</option>
-    </select>
-
-    <button onclick="buscarCoordenadas()">Buscar Geocoordenadas</button>
+    <div class="controls-container">
+        <select id="cidadeSelect">
+            <option value="">-- Escolha uma cidade --</option>
+        </select>
+        <button onclick="buscarCoordenadas()">Buscar Geocoordenadas</button>
+    </div>
 
     <div id="resultado"></div>
     <div id="map"></div>
@@ -83,7 +143,7 @@
     <script src="https://unpkg.com/leaflet@1.9.5/dist/leaflet.js"
             integrity="sha256-uMnJ7XVtgi6Rrrh4W8/7v5hSRwZs2cM9I2pF0v+DkVY=" crossorigin=""></script>
     <script>
-        // Lista estática de municípios do Tocantins
+        // ... (O resto do seu script JavaScript permanece o mesmo)
         const municipiosTO = [
             "Palmas","Araguaína","Gurupi","Porto Nacional","Paraíso do Tocantins","Colinas do Tocantins",
             "Guaraí","Miracema do Tocantins","Araguatins","Formoso do Araguaia","Alvorada",
