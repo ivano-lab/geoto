@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Mapa Experimental - Trilhando Rios</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.5/dist/leaflet.css"
+          integrity="sha256-sA+SkHqlkR9F0tXz6dE4ZcSb3i0u0Hw3FJ4yGmM0Mnk=" crossorigin=""/>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: #f4f4f9;
+            color: #333;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        h1 {
+            color: #1345B5;
+        }
+
+        select, button {
+            padding: 0.8rem;
+            margin: 0.5rem;
+            border-radius: 8px;
+            border: 2px solid #1345B5;
+            font-size: 1rem;
+        }
+
+        button {
+            background-color: #FFD901;
+            color: #1345B5;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background-color: #e0c800;
+        }
+
+        #resultado {
+            margin-top: 1rem;
+            background: white;
+            padding: 1rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        pre {
+            text-align: left;
+            background: #eee;
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+
+        #map {
+            margin-top: 2rem;
+            height: 500px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <h1>Trilhando Rios - Módulo Experimental</h1>
+    <p>Selecione uma cidade para consultar suas coordenadas geográficas.</p>
+
+    <select id="cidadeSelect">
+        <option value="">-- Escolha uma cidade --</option>
+    </select>
+
+    <button onclick="buscarCoordenadas()">Buscar Geocoordenadas</button>
+
+    <div id="resultado"></div>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.5/dist/leaflet.js"
+            integrity="sha256-uMnJ7XVtgi6Rrrh4W8/7v5hSRwZs2cM9I2pF0v+DkVY=" crossorigin=""></script>
+    <script>
+        // Lista estática de municípios do Tocantins
+        const municipiosTO = [
+            "Palmas","Araguaína","Gurupi","Porto Nacional","Paraíso do Tocantins","Colinas do Tocantins",
+            "Guaraí","Miracema do Tocantins","Araguatins","Formoso do Araguaia","Alvorada",
+            "Aparecida do Rio Negro","Araguacema","Arapoema","Arraias","Augustinópolis","Aurora do Tocantins",
+            "Axixá do Tocantins","Babaçulândia","Barra do Ouro","Barrolândia","Bernardo Sayão",
+            "Bom Jesus do Tocantins","Brasilândia do Tocantins","Brejinho de Nazaré","Buriti do Tocantins",
+            "Cachoeirinha","Campos Lindos","Cariri do Tocantins","Carmolândia","Carrasco Bonito",
+            "Caseara","Centenário","Chapada da Natividade","Chapada de Areia","Combinado",
+            "Conceição do Tocantins","Couto de Magalhães","Cristalândia","Crixás do Tocantins",
+            "Darcinópolis","Dianópolis","Divinópolis do Tocantins","Dois Irmãos do Tocantins","Dueré",
+            "Esperantina","Fátima","Figueirópolis","Filadélfia","Fortaleza do Tabocão","Goianorte",
+            "Goiatins","Guaraí","Ipueiras","Itacajá","Itaguatins","Itapiratins",
+            "Itaporã do Tocantins","Jaú do Tocantins","Juarina","Lagoa da Confusão","Lagoa do Tocantins",
+            "Lajeado","Lavandeira","Lizarda","Luzinópolis","Marianópolis do Tocantins","Mateiros",
+            "Maurilândia do Tocantins","Miracema do Tocantins","Miranorte","Monte do Carmo","Monte Santo do Tocantins",
+            "Palmeirante","Palmeiras do Tocantins","Palmeirópolis","Paraíso do Tocantins",
+            "Paranã","Pau D'Arco","Pedro Afonso","Peixe","Pequizeiro","Pindorama do Tocantins","Piraquê",
+            "Pium","Ponte Alta do Bom Jesus","Ponte Alta do Tocantins","Porto Alegre do Tocantins",
+            "Porto Nacional","Praia Norte","Presidente Kennedy","Pugmil","Recursolândia","Riachinho",
+            "Rio da Conceição","Rio dos Bois","Rio Sono","Sampaio","Sandolândia","Santa Fé do Araguaia",
+            "Santa Maria do Tocantins","Santa Rita do Tocantins","Santa Rosa do Tocantins","Santa Tereza do Tocantins",
+            "Santa Terezinha do Tocantins","São Bento do Tocantins","São Félix do Tocantins",
+            "São Miguel do Tocantins","São Salvador do Tocantins","São Sebastião do Tocantins",
+            "São Valério","Silvanópolis","Sítio Novo do Tocantins","Sucupira"
+        ];
+
+        // Preencher select
+        const select = document.getElementById("cidadeSelect");
+        municipiosTO.forEach(cidade => {
+            const opt = document.createElement("option");
+            opt.value = cidade + ", Tocantins, Brasil";
+            opt.textContent = cidade;
+            select.appendChild(opt);
+        });
+
+        // Inicializa o mapa
+        const map = L.map('map').setView([-10.25, -48.25], 6); // centro do Tocantins
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        let marker;
+
+        // Função para buscar coordenadas e mostrar no mapa
+        async function buscarCoordenadas() {
+            const cidade = select.value;
+            const resultadoDiv = document.getElementById("resultado");
+
+            if (!cidade) {
+                resultadoDiv.innerHTML = "<p>⚠️ Por favor, selecione uma cidade.</p>";
+                return;
+            }
+
+            resultadoDiv.innerHTML = "<p>🔄 Buscando dados...</p>";
+
+            const resposta = await fetch(`/buscar_local?q=${encodeURIComponent(cidade)}`);
+            const dados = await resposta.json();
+
+            if (dados.length === 0) {
+                resultadoDiv.innerHTML = "<p>Nenhum resultado encontrado.</p>";
+                return;
+            }
+
+            const info = dados[0];
+            resultadoDiv.innerHTML = `
+                <h2>${info.display_name}</h2>
+                <p><strong>Latitude:</strong> ${info.lat}</p>
+                <p><strong>Longitude:</strong> ${info.lon}</p>
+                <pre>${JSON.stringify(info, null, 2)}</pre>
+            `;
+
+            // Atualiza mapa
+            if (marker) map.removeLayer(marker);
+            marker = L.marker([info.lat, info.lon]).addTo(map)
+                .bindPopup(`<b>${info.display_name}</b><br>Lat: ${info.lat}, Lon: ${info.lon}`)
+                .openPopup();
+            map.setView([info.lat, info.lon], 12);
+        }
+    </script>
+</body>
+</html>
